@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mafia — Village Game</title>
+<style>
+:root{--bg:#0b0b10;--card:#15151d;--ink:#f2eee8;--muted:#a7a0a0;--line:#30252b;--accent:#c49a52;--soft:#33251f;--danger:#a83242;--good:#5b9b76}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+header{background:#111117;border-bottom:1px solid var(--line);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:5}
+.brand{font-weight:950;letter-spacing:.22em;color:var(--accent);font-size:22px;text-shadow:0 0 18px #c49a5233}.sub{font-size:12px;color:var(--muted)}
+main{max-width:850px;margin:auto;padding:20px 15px 55px}.panel{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:18px;margin:12px 0;box-shadow:0 12px 32px #0008}
+h1,h2,h3,p{margin-top:0}h2{font-size:21px;margin-bottom:5px}h3{font-size:16px;margin-bottom:8px}p{color:var(--muted);margin-bottom:12px}
+button,select,input{font:inherit}button{border:0;border-radius:10px;background:var(--accent);color:white;padding:11px 15px;font-weight:700;cursor:pointer}button.secondary{background:#28242a;color:var(--ink);border:1px solid var(--line)}button.danger{background:var(--danger)}button:disabled{opacity:.4}
+input,select{width:100%;border:1px solid #40343b;border-radius:9px;padding:10px 11px;background:#201e25;color:var(--ink);outline:none}input:focus,select:focus{border-color:var(--accent)}
+label{display:block;font-size:13px;font-weight:650;margin-bottom:5px}.field{min-width:0}.row{display:flex;gap:12px;align-items:end;flex-wrap:wrap}.row>.field{flex:1}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+.role-row{display:grid;grid-template-columns:1fr 90px;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}.role-row:last-child{border:0}.role-row small{display:block;color:var(--muted);font-size:12px}
+.names-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:9px}.name-field label{color:var(--muted);font-size:12px}
+.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}.actions button{flex:1}.badge{display:inline-block;background:#35251f;color:#e0b66f;padding:4px 9px;border-radius:99px;font-size:12px;font-weight:750}
+.note{background:#241a1e;border:1px solid #56303a;color:#e6c8b5;padding:11px 12px;border-radius:10px;font-size:13px;margin:12px 0}
+.hidden{display:none!important}#pinModal:not(.hidden){display:flex!important}.center{text-align:center}.player{padding:12px;border:1px solid #3b3037;border-radius:12px;background:linear-gradient(145deg,#1c1a21,#141319);display:flex;flex-direction:column;gap:9px}.dead{opacity:.45;text-decoration:line-through}.target-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:12px 0}.target{background:#28232b;color:var(--ink);border:1px solid #493943}.target.selected{border:2px solid var(--accent);background:var(--soft)}
+.role-card{background:linear-gradient(145deg,#241b21,#17171e);border:1px solid #6b4b36;border-radius:14px;padding:25px;text-align:center;margin:14px 0}.role-icon{font-size:38px}.role-name{font-size:27px;font-weight:850;color:var(--accent);margin:4px}.big{font-size:24px;font-weight:800;margin:12px 0}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stat{background:#211f26;border:1px solid var(--line);border-radius:10px;padding:10px}.stat b{display:block;font-size:21px;color:var(--accent)}.stat span{font-size:12px;color:var(--muted)}
+footer{text-align:center;color:#766e70;font-size:12px;padding:20px}
+[dir=rtl] body{text-align:right}[dir=rtl] header{flex-direction:row}[dir=rtl] .role-row{grid-template-columns:1fr 90px}
+
+.player-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.role-arrow{width:100%;padding:7px 10px;background:#292128;color:#d7b16f;border:1px solid #594333;border-radius:9px;font-size:13px}
+.role-arrow:hover{background:#3a2927}
+.host-role{padding:8px;border-radius:8px;background:#2a2024;border:1px solid #68404a;color:#f0c6a5;text-align:center;font-weight:800}
+.host-panel{margin-top:14px;padding:14px;border:1px dashed #79583c;border-radius:12px;background:#1b181e}
+.host-panel h3{color:#e0b66f}
+@media(max-width:520px){header{padding:12px}.panel{padding:14px}.stats{grid-template-columns:repeat(2,1fr)}}
+</style></head>
+<body>
+<header><div><div class="brand">MAFIA</div><div class="sub" data-i="subtitle">The Village Game</div></div><div class="row" style="align-items:center;gap:7px"><button class="secondary" id="langBtn" style="padding:8px 12px">العربية</button></div></header>
+<main>
+<section id="setup">
+ <div class="panel">
+  <span class="badge" data-i="setupBadge">GAME SETUP</span><h2 data-i="setupTitle">Create your game</h2><p data-i="setupDesc">Choose the players and roles, then enter each player's name.</p>
+  <div class="row">
+   <div class="field"><label data-i="playersCount" for="playerCount">Number of players</label><input id="playerCount" type="number" min="5" max="40" value="20"></div>
+   <div class="field"><label data-i="mafiaCount" for="mafiaCount">Mafia members</label><input id="mafiaCount" type="number" min="0" max="20" value="4"></div>
+  </div>
+  <div class="note" id="summary">20 players · 4 Mafia · 9 Villagers</div>
+ </div>
+ <div class="panel">
+  <h3 data-i="rolesTitle">Choose roles and quantities</h3><p data-i="rolesDesc">Set 0 to remove a role. Villagers are added automatically to fill the remaining places.</p>
+  <div id="roleOptions"></div>
+ </div>
+ <div class="panel">
+  <h3 data-i="namesTitle">Player names</h3><p data-i="namesDesc">Names appear in the same order you enter them.</p>
+  <div id="nameFields" class="names-grid"></div>
+  <div class="actions"><button class="secondary" id="sampleNames" data-i="sample">Fill sample names</button><button id="start" data-i="start">Shuffle roles & start</button></div>
+ </div>
+</section>
+
+<section id="reveal" class="hidden">
+ <div class="panel">
+  <span class="badge" data-i="revealBadge">PRIVATE ROLE REVEAL</span><h2 data-i="passPhone">Pass the phone</h2><p data-i="passDesc">Only the named player should look at the screen.</p>
+  <div class="big" id="revealName"></div><div id="roleSecret" class="role-card hidden"><div class="role-icon" id="roleIcon"></div><div class="role-name" id="roleName"></div><p id="roleDescription"></p></div>
+  <div class="actions"><button id="showRole" data-i="show">Show my role</button><button id="hideRole" class="secondary hidden" data-i="hide">Hide role</button><button id="nextReveal" disabled data-i="next">Next player</button></div>
+  <div class="note" id="revealProgress"></div>
+ </div>
+</section>
+
+<section id="game" class="hidden">
+ <div class="panel">
+  <div class="row" style="justify-content:space-between;align-items:center"><span class="badge" id="phasePill"></span><span class="badge" id="alivePill"></span></div>
+  <h2 id="phaseTitle"></h2><p id="phaseText"></p><div id="hostAction"></div><div class="actions" id="phaseButtons"></div>
+ </div>
+ <div class="panel"><h3 data-i="villageStatus">Village status</h3><div class="stats" id="stats"></div><h3 style="margin-top:16px" data-i="playersList">Players</h3><div id="players" class="grid"></div></div>
+ <div class="panel">
+  <div class="row" style="justify-content:space-between;align-items:center">
+   <div><h3 style="margin:0" data-i="hostTools">Host tools</h3><p style="margin:4px 0 0" data-i="hostToolsDesc">Private role lookup for the game host.</p></div>
+   <button id="hostModeBtn" class="secondary">🔒 Host mode</button>
+  </div>
+  <div id="hostPanel" class="host-panel hidden">
+   <div class="row" style="justify-content:space-between;align-items:center"><b id="hostUnlockedLabel">Host mode unlocked</b><button id="lockHost" class="secondary">Lock</button></div>
+   <p id="hostHint" style="margin:8px 0">Tap the arrow under a player to reveal their role.</p>
+  </div>
+ </div>
+ <div class="panel"><h3 data-i="hostLog">Host log</h3><div id="log"></div></div>
+ <div class="actions"><button class="secondary" id="restart" data-i="restart">Restart game</button></div>
+</section>
+</main>
+<div id="startupPinModal" class="hidden" style="position:fixed;inset:0;z-index:30;background:#000d;align-items:center;justify-content:center;padding:18px">
+ <div class="panel" style="width:min(100%,380px);margin:0;text-align:center">
+  <div style="font-size:34px">🔐</div>
+  <h2 id="startupPinTitle">Host PIN</h2>
+  <p id="startupPinDesc">Save this code. You need it to open Host Mode.</p>
+  <div id="startupPinValue" style="font-size:38px;letter-spacing:.3em;font-weight:900;color:var(--accent);padding:12px;border:1px dashed #79583c;border-radius:12px;margin:12px 0">0000</div>
+  <button id="startupPinClose" style="width:100%">Got it</button>
+ </div>
+</div>
+<div id="pinModal" class="hidden" style="position:fixed;inset:0;z-index:20;background:#000c;display:flex;align-items:center;justify-content:center;padding:18px">
+ <div class="panel" style="width:min(100%,360px);margin:0;text-align:center">
+  <h2 id="pinTitle">Host access</h2>
+  <p id="pinMessage">Enter your 4-digit host PIN.</p>
+  <input id="pinInput" type="password" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="••••" style="text-align:center;font-size:24px;letter-spacing:.35em">
+  <div class="actions"><button id="pinSubmit">Unlock</button><button id="pinCancel" class="secondary">Cancel</button></div>
+ </div>
+</div>
+<footer>MAFIA · <span data-i="footer">A simple host-managed party game</span></footer>
+<script>
+const I18N={
+ en:{subtitle:"The Village Game",hostTools:"Host tools",hostToolsDesc:"Private role lookup for the game host.",setupBadge:"GAME SETUP",setupTitle:"Create your game",setupDesc:"Choose the players and roles, then enter each player's name.",playersCount:"Number of players",mafiaCount:"Mafia members",rolesTitle:"Choose roles and quantities",rolesDesc:"Set 0 to remove a role. Villagers are added automatically to fill the remaining places.",namesTitle:"Player names",namesDesc:"Names appear in the same order you enter them.",sample:"Fill sample names",start:"Shuffle roles & start",revealBadge:"PRIVATE ROLE REVEAL",passPhone:"Pass the phone",passDesc:"Only the named player should look at the screen.",show:"Show my role",hide:"Hide role",next:"Next player",villageStatus:"Village status",playersList:"Players",hostLog:"Host log",restart:"Restart game",villagers:"Villagers",night:"Night",day:"Day",sleep:"The village sleeps",wake:"The village wakes",continue:"Continue",skip:"Skip",choose:"Choose",alive:"alive",finish:"Finish role reveal",winner:"wins!",vote:"Start voting",count:"Count votes",discussion:"Discussion & voting",noDeath:"No one died tonight.",newNight:"Begin next night",gameOver:"Game over",target:"Choose a player",mafiaAction:"Mafia chooses a victim",witchAction:"Witch's turn",doctorAction:"Doctor chooses someone to protect",cupidAction:"Cupid links two players",policeAction:"Police may use a bullet",seerAction:"Seer checks a player's role",mayorAction:"Mayor's secret moment",heal:"Use Heal",poison:"Use Poison",save:"Save potions / skip",bullets:"Bullets remaining",linked:"Linked players",tied:"Vote tied or no votes. Nobody is eliminated.",eliminated:"was eliminated",role:"Role",private:"Private host information",badNames:"Enter a unique name for every player.",badCount:"Role counts exceed the number of players.",badMafia:"Mafia count must be at least 1.",nightResult:"Night results",nextPhase:"Continue",voteHint:"Enter each living player's vote. Mayor's vote counts twice.",selectVote:"No vote",death:"died",hunter:"Hunter died. Choose one living player to take down.",mafiaWin:"Mafia",villageWin:"Village",nightStarted:"Night started.",skipAction:"Skip action"},
+ ar:{subtitle:"لعبة القرية",hostTools:"أدوات المنظّم",hostToolsDesc:"كشف الأدوار بشكل سري للمنظّم فقط.",setupBadge:"إعداد اللعبة",setupTitle:"أنشئ لعبتك",setupDesc:"اختار عدد اللاعبين والأدوار، وبعدها اكتب اسم كل لاعب في خانته.",playersCount:"عدد اللاعبين",mafiaCount:"عدد أفراد المافيا",rolesTitle:"اختار الأدوار وعدد كل دور",rolesDesc:"اكتب 0 لإلغاء أي دور. القرويون العاديون بيتضافوا تلقائيًا لباقي الأماكن.",namesTitle:"أسماء اللاعبين",namesDesc:"الأسماء هتظهر بنفس ترتيب إدخالها.",sample:"إضافة أسماء تجريبية",start:"وزّع الأدوار وابدأ",revealBadge:"كشف الأدوار بسرية",passPhone:"سلّم الموبايل",passDesc:"اللاعب المكتوب اسمه فقط هو اللي يبص على الشاشة.",show:"اظهر شخصيتي",hide:"اخفي الشخصية",next:"اللاعب التالي",villageStatus:"حالة القرية",playersList:"اللاعبون",hostLog:"سجل المنظم",restart:"إعادة اللعبة",footer:"لعبة جماعية يديرها المنظم",villagers:"قروي عادي",night:"الليل",day:"النهار",sleep:"القرية تنام",wake:"القرية تصحى",continue:"استمرار",skip:"تخطي",choose:"اختار",alive:"على قيد الحياة",finish:"إنهاء كشف الأدوار",winner:"فاز!",vote:"ابدأ التصويت",count:"احسب الأصوات",discussion:"النقاش والتصويت",noDeath:"محدش مات الليلة دي.",newNight:"ابدأ ليلة جديدة",gameOver:"انتهت اللعبة",target:"اختار لاعب",mafiaAction:"المافيا تختار الضحية",witchAction:"دور الويتش",doctorAction:"الدكتور يختار شخص يحميه",cupidAction:"كيوبيد بيربط لاعبين",policeAction:"البوليس ممكن يستخدم رصاصة",seerAction:"السير يكشف رول لاعب",mayorAction:"لحظة المايور السرية",heal:"استخدم العلاج",poison:"استخدم السم",save:"احتفظ بالجرعات / تخطي",bullets:"الرصاص المتبقي",linked:"المرتبطان",tied:"التصويت متعادل أو مفيش أصوات. محدش هيخرج.",eliminated:"خرج من اللعبة",role:"الشخصية",private:"معلومات سرية للمنظم",badNames:"اكتب اسم مختلف لكل لاعب.",badCount:"مجموع الأدوار أكبر من عدد اللاعبين.",badMafia:"لازم يكون فيه مافيا واحدة على الأقل.",nightResult:"نتيجة الليل",nextPhase:"استمرار",voteHint:"ادخل تصويت كل لاعب حي. صوت المايور يتحسب بصوتين.",selectVote:"بدون تصويت",death:"مات",hunter:"الهانتر مات. اختار لاعب حي ياخده معاه.",mafiaWin:"المافيا",villageWin:"القرية",nightStarted:"بدأ الليل.",skipAction:"تخطي الدور"}
+};
+let lang="en",G=null;
+const $=id=>document.getElementById(id),t=k=>I18N[lang][k]||k;
+const roleDefs=[
+ ["Mafia","🗡️","Mafia wakes together and agrees on one victim."],
+ ["Police","🚔","Has two bullets for the whole game; may shoot at night."],
+ ["Doctor","🩺","Chooses one player to protect each night."],
+ ["Witch","🧙","Each Witch has one Heal and one Poison potion for the whole game."],
+ ["Cupid","💘","On the first night, links two players. If one dies, the other dies too."],
+ ["Hunter","🏹","When eliminated, chooses one living player to take down."],
+ ["Mayor","👑","Vote counts double. May secretly open eyes during the night."],
+ ["Seer","🔮","Each night, checks the role of one living player."]
+];
+const roleNames={Mafia:{en:"Mafia",ar:"مافيا"},Police:{en:"Police",ar:"بوليس"},Doctor:{en:"Doctor",ar:"دكتور"},Witch:{en:"Witch",ar:"ويتش"},Cupid:{en:"Cupid",ar:"كيوبيد"},Hunter:{en:"Hunter",ar:"هانتر"},Mayor:{en:"Mayor",ar:"مايور"},Seer:{en:"Seer",ar:"سير"},Villager:{en:"Villager",ar:"قروي عادي"}};
+const roleDesc={
+ Mafia:{en:roleDefs[0][2],ar:"بتصحى مع باقي المافيا وبتتفقوا على ضحية واحدة كل ليلة."},
+ Police:{en:roleDefs[1][2],ar:"معاك رصاصتين طول اللعبة، وتقدر تطلق بالليل."},
+ Doctor:{en:roleDefs[2][2],ar:"بتختار لاعب تحميه كل ليلة."},
+ Witch:{en:roleDefs[3][2],ar:"معاكي جرعة علاج وجرعة سم، كل واحدة مرة واحدة طول اللعبة."},
+ Cupid:{en:roleDefs[4][2],ar:"في أول ليلة بتربط لاعبين. لو واحد مات، التاني يموت معاه."},
+ Hunter:{en:roleDefs[5][2],ar:"لما تخرج من اللعبة تختار لاعب حي ياخده معاك."},
+ Mayor:{en:roleDefs[6][2],ar:"صوتك بصوتين، وتقدر تفتح عينك سرًا أثناء الليل."},
+ Seer:{en:roleDefs[7][2],ar:"كل ليلة تقدر تعرف شخصية لاعب واحد."},
+ Villager:{en:"Find the Mafia through discussion and voting.",ar:"حاول تكتشف المافيا من خلال النقاش والتصويت."}
+};
+function setLang(l){lang=l;document.documentElement.lang=l;document.documentElement.dir=l==="ar"?"rtl":"ltr";$("langBtn").textContent=l==="ar"?"English":"العربية";document.querySelectorAll("[data-i]").forEach(el=>el.textContent=t(el.dataset.i));renderRoleOptions();renderNameFields();updateSummary();if(G&&G.phase==="reveal")showReveal();else if(G){renderGame();if(G.hostUnlocked){$("hostPanel").classList.remove("hidden");$("hostUnlockedLabel").textContent=l==="ar"?"وضع المنظّم مفتوح":"Host mode unlocked";$("hostHint").textContent=l==="ar"?"اضغط السهم تحت اسم اللاعب لكشف شخصيته. اقفل الوضع قبل ما تسلّم الموبايل.":"Tap the arrow under a player to reveal their role. Lock host mode before passing the phone."}}}
+$("langBtn").onclick=()=>setLang(lang==="en"?"ar":"en");
+function roleCount(role){return +($("count_"+role)?.value||0)}
+function renderRoleOptions(){let old={};roleDefs.forEach(r=>{let el=$("count_"+r[0]);if(el)old[r[0]]=el.value});$("roleOptions").innerHTML=roleDefs.map(([r,icon,desc])=>`<div class="role-row"><div><b>${icon} ${roleNames[r][lang]}</b><small>${lang==="ar"?roleDesc[r].ar:desc}</small></div><input id="count_${r}" aria-label="${r} count" type="number" min="0" max="40" value="${old[r]??(r==="Mafia"?4:1)}"></div>`).join("");roleDefs.forEach(r=>$("count_"+r[0]).addEventListener("input",updateSummary))}
+function renderNameFields(){let n=Math.max(5,Math.min(40,+$("playerCount").value||20));let vals=[...document.querySelectorAll(".player-name")].map(x=>x.value);$("nameFields").innerHTML=Array.from({length:n},(_,i)=>`<div class="name-field"><label>${lang==="ar"?"اللاعب":"Player"} ${i+1}</label><input class="player-name" placeholder="${lang==="ar"?"اسم اللاعب":"Player name"} ${i+1}" value="${(vals[i]||"").replace(/"/g,"&quot;")}"></div>`).join("")}
+$("playerCount").addEventListener("input",()=>{renderNameFields();updateSummary()});
+function updateSummary(){let n=+$("playerCount").value||20,m=roleCount("Mafia"),special=roleDefs.slice(1).reduce((s,r)=>s+roleCount(r[0]),0),v=n-m-special;$("summary").textContent=lang==="ar"?`${n} لاعب · ${m} مافيا · ${Math.max(0,v)} قروي عادي`:`${n} players · ${m} Mafia · ${Math.max(0,v)} Villagers`; $("summary").style.color=v<0?"#a83d4b":""}
+$("sampleNames").onclick=()=>{document.querySelectorAll(".player-name").forEach((x,i)=>x.value=(lang==="ar"?["أحمد","منى","عمر","ليلى","يوسف","نور","مريم","كريم","سارة","علي","آدم","ملك","زياد","هنا","فارس","جنى","ياسين","دينا","محمود","ندى"][i%20]:"Player "+(i+1)))};
+function shuffle(a){for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+$("start").onclick=()=>{
+ let n=+$("playerCount").value,names=[...document.querySelectorAll(".player-name")].map(x=>x.value.trim()),roles=[];
+ roleDefs.forEach(([r])=>{for(let i=0;i<roleCount(r);i++)roles.push(r)});
+ if(n<5||n>40)return alert("Choose 5–40 players");
+ if(roles.length>n)return alert(t("badCount"));
+ if(roleCount("Mafia")<1)return alert(t("badMafia"));
+ if(names.some(x=>!x)||new Set(names.map(x=>x.toLowerCase())).size!==n)return alert(t("badNames"));
+ while(roles.length<n)roles.push("Villager");shuffle(roles);
+ G={players:names.map((name,i)=>({id:i,name,role:roles[i],alive:true,heal:true,poison:true,bullets:2})),hostPin:String(Math.floor(1000+Math.random()*9000)),hostUnlocked:false,reveal:0,night:1,phase:"reveal",log:[],linkedPairs:[],actions:[],actionIndex:0,votes:{}};
+ $("startupPinTitle").textContent=lang==="ar"?"الرقم السري للمنظّم":"Your Host PIN";
+ $("startupPinDesc").textContent=lang==="ar"?"احتفظ بالرقم ده. هتحتاجه لفتح وضع المنظّم، ومتشاركوش مع اللاعبين.":"Save this code. You need it to open Host Mode; keep it private.";
+ $("startupPinValue").textContent=G.hostPin;
+ $("startupPinClose").textContent=lang==="ar"?"تمام":"Got it";
+ $("setup").classList.add("hidden");$("reveal").classList.remove("hidden");showReveal();
+ $("startupPinModal").classList.remove("hidden");
+ $("startupPinModal").style.display="flex";
+};
+function showReveal(){let p=G.players[G.reveal];$("revealName").textContent=p.name;$("roleSecret").classList.add("hidden");$("showRole").classList.remove("hidden");$("hideRole").classList.add("hidden");$("nextReveal").disabled=true;$("nextReveal").textContent=G.reveal===G.players.length-1?t("finish"):t("next");$("revealProgress").textContent=`${G.reveal+1} / ${G.players.length}`}
+$("showRole").onclick=()=>{let p=G.players[G.reveal];$("roleIcon").textContent=roleDefs.find(r=>r[0]===p.role)?.[1]||"🌾";$("roleName").textContent=roleNames[p.role][lang];$("roleDescription").textContent=roleDesc[p.role][lang];$("roleSecret").classList.remove("hidden");$("showRole").classList.add("hidden");$("hideRole").classList.remove("hidden")};
+$("hideRole").onclick=()=>{$("roleSecret").classList.add("hidden");$("hideRole").classList.add("hidden");$("nextReveal").disabled=false};
+$("nextReveal").onclick=()=>{if(++G.reveal<G.players.length)showReveal();else{$("reveal").classList.add("hidden");$("game").classList.remove("hidden");startNight()}};
+function log(s){G.log.unshift(s);$("log").innerHTML=G.log.map(x=>`<div class="sub" style="padding:5px 0">${esc(x)}</div>`).join("")}
+function alive(){return G.players.filter(p=>p.alive)}function rolePlayers(r){return alive().filter(p=>p.role===r)}
+function updateBoard(){let a=alive();$("alivePill").textContent=a.length+" "+t("alive");$("stats").innerHTML=`<div class="stat"><b>${a.length}</b><span>${t("alive")}</span></div><div class="stat"><b>${rolePlayers("Mafia").length}</b><span>${roleNames.Mafia[lang]}</span></div><div class="stat"><b>${G.night}</b><span>${t("night")}</span></div>`;$("players").innerHTML=G.players.map(p=>`<div class="player ${p.alive?"":"dead"}">
+ <div class="player-top"><b>${esc(p.name)}</b><span class="badge">${p.alive?(lang==="ar"?"حي":"ALIVE"):(lang==="ar"?"خرج":"OUT")}</span></div>
+ ${G.hostUnlocked?`<button class="role-arrow" data-role-player="${p.id}">⌄ ${lang==="ar"?"اكشف الشخصية":"Reveal role"}</button><div class="host-role hidden" id="host-role-${p.id}">${roleNames[p.role][lang]}</div>`:""}
+ </div>`).join("");
+if(G.hostUnlocked)document.querySelectorAll("[data-role-player]").forEach(b=>b.onclick=()=>{let el=$("host-role-"+b.dataset.rolePlayer);el.classList.toggle("hidden");b.textContent=el.classList.contains("hidden")?(lang==="ar"?"⌄ اكشف الشخصية":"⌄ Reveal role"):(lang==="ar"?"⌃ اخفِ الشخصية":"⌃ Hide role")})}
+function setAction(s){$("hostAction").innerHTML=s}function setBtns(s){$("phaseButtons").innerHTML=s}
+function targetButtons(list,allowSkip,cb){$("hostAction").insertAdjacentHTML("beforeend",`<div class="target-list">${list.map(p=>`<button class="target" data-id="${p.id}">${esc(p.name)}</button>`).join("")}</div>${allowSkip?`<button class="secondary" id="skipBtn">${t("skip")}</button>`:""}`);document.querySelectorAll("[data-id]").forEach(b=>b.onclick=()=>cb(+b.dataset.id));if($("skipBtn"))$("skipBtn").onclick=()=>cb(null)}
+function startNight(){G.phase="night";G.actions=[];G.actionIndex=0;G.mafiaTarget=null;G.protected=[];G.poisoned=[];G.policeShots=[];G.seerChecks=[];log(`${t("night")} ${G.night}`);const mafia=rolePlayers("Mafia");if(mafia.length)G.actions.push({type:"Mafia",players:mafia});["Witch","Doctor","Cupid","Police","Seer","Mayor"].forEach(r=>{if(r==="Cupid"&&G.night>1)return;rolePlayers(r).forEach(p=>{if(r==="Police"&&p.bullets<=0)return;if(r==="Witch"&&!p.heal&&!p.poison)return;G.actions.push({type:r,player:p})})});renderGame()}
+function currentAction(){return G.actions[G.actionIndex]}
+function renderGame(){updateBoard();$("phasePill").textContent=G.phase==="night"?`${t("night")} ${G.night}`:G.phase==="day"?`${t("day")} ${G.night}`:t("nightResult");if(G.phase==="night")renderNightAction();else if(G.phase==="day")renderDay();else if(G.phase==="result")renderNightResult()}
+function renderNightAction(){let a=currentAction();if(!a){resolveNight();return}let r=a.type;let desc={Mafia:t("mafiaAction"),Witch:t("witchAction"),Doctor:t("doctorAction"),Cupid:t("cupidAction"),Police:t("policeAction"),Seer:t("seerAction"),Mayor:t("mayorAction")}[r];$("phaseTitle").textContent=desc;$("phaseText").textContent=(a.player?.name||"")+(a.players?" ("+a.players.length+")":"");setBtns("");setAction(`<div class="note">${t("private")}: ${desc}</div>`);
+ if(r==="Mayor"){setAction(`<div class="note">${t("mayorAction")} — ${esc(a.player.name)} may quietly look around.</div>`);setBtns(`<button id="done">${t("continue")}</button>`);$("done").onclick=nextAction;return}
+ if(r==="Witch"){let p=a.player;setAction(`<div class="note">${t("witchAction")}. ${t("heal")}: ${p.heal?"✓":"—"} · ${t("poison")}: ${p.poison?"✓":"—"}<br>${lang==="ar"?"ضحية المافيا":"Mafia target"}: ${G.mafiaTarget===null?"—":esc(G.players[G.mafiaTarget].name)}</div>`);setBtns(`<button id="heal" ${!p.heal||G.mafiaTarget===null?"disabled":""}>${t("heal")}</button><button class="danger" id="poison" ${!p.poison?"disabled":""}>${t("poison")}</button><button class="secondary" id="skip">${t("skip")}</button>`);$("heal").onclick=()=>{p.heal=false;G.protected.push(G.mafiaTarget);nextAction()};$("poison").onclick=()=>{setAction(`<p>${t("target")}</p>`);targetButtons(alive(),true,id=>{if(id!==null){p.poison=false;G.poisoned.push(id)}nextAction()})};$("skip").onclick=nextAction;return}
+ if(r==="Cupid"){setAction(`<div class="note">${t("cupidAction")} — ${esc(a.player.name)}</div><p>${lang==="ar"?"اختار أول لاعب":"Choose first player"}</p>`);targetButtons(alive(),false,id=>{setAction(`<p>${lang==="ar"?"اختار اللاعب الثاني":"Choose second player"}</p>`);targetButtons(alive().filter(p=>p.id!==id),false,id2=>{G.linkedPairs.push([id,id2]);nextAction()})});return}
+ if(r==="Mafia"){setAction(`<div class="note">${t("mafiaAction")} — ${a.players.map(p=>esc(p.name)).join(", ")}</div>`);targetButtons(alive().filter(p=>p.role!=="Mafia"),false,id=>{G.mafiaTarget=id;nextAction()});return}
+ if(r==="Police"){let p=a.player;setAction(`<div class="note">${t("policeAction")} · ${t("bullets")}: ${p.bullets}</div>`);targetButtons(alive().filter(x=>x.id!==p.id),true,id=>{if(id!==null){p.bullets--;G.policeShots.push(id)}nextAction()});return}
+ if(r==="Doctor"){setAction(`<div class="note">${t("doctorAction")} — ${esc(a.player.name)}</div>`);targetButtons(alive(),true,id=>{if(id!==null)G.protected.push(id);nextAction()});return}
+ if(r==="Seer"){setAction(`<div class="note">${t("seerAction")} — ${esc(a.player.name)}</div>`);targetButtons(alive().filter(p=>p.id!==a.player.id),false,id=>{alert(`${t("private")}: ${G.players[id].name} — ${roleNames[G.players[id].role][lang]}`);nextAction()});return}
+}
+function nextAction(){G.actionIndex++;renderGame()}
+function kill(id){let p=G.players[id];if(p&&p.alive){p.alive=false;return true}return false}
+function resolveNight(){let dead=[];if(G.mafiaTarget!==null&&!G.protected.includes(G.mafiaTarget)&&kill(G.mafiaTarget))dead.push(G.mafiaTarget);G.poisoned.forEach(id=>{if(kill(id))dead.push(id)});G.policeShots.forEach(id=>{if(kill(id))dead.push(id)});let changed=true;while(changed){changed=false;for(const pair of G.linkedPairs){let [a,b]=pair;if(dead.includes(a)&&kill(b)){dead.push(b);changed=true}if(dead.includes(b)&&kill(a)){dead.push(a);changed=true}}}G.lastDead=[...new Set(dead)];G.hunterQueue=G.lastDead.filter(id=>G.players[id].role==="Hunter");G.phase="result";renderNightResult()}
+function renderNightResult(){$("phasePill").textContent=t("nightResult");$("phaseTitle").textContent=t("wake");$("phaseText").textContent=G.lastDead.length?G.lastDead.map(id=>G.players[id].name).join("، "):t("noDeath");setAction(`<div class="note">${G.lastDead.length?G.lastDead.map(id=>`${esc(G.players[id].name)} ${t("death")}`).join("<br>"):t("noDeath")}</div>`);setBtns(`${G.hunterQueue.length?`<button id="hunter">${roleNames.Hunter[lang]}</button>`:""}<button id="toDay">${t("continue")}</button>`);if(G.hunterQueue.length)$("hunter").onclick=resolveHunter;$("toDay").onclick=()=>{if(G.hunterQueue.length)return;G.phase="day";renderGame()};updateBoard()}
+function resolveHunter(){let id=G.hunterQueue.shift();if(id===undefined)return;setAction(`<div class="note">${t("hunter")} (${esc(G.players[id].name)})</div>`);setBtns("");targetButtons(alive(),true,target=>{if(target!==null){kill(target);G.linkedPairs.forEach(pair=>{if(pair.includes(target))kill(pair.find(x=>x!==target))})}if(G.hunterQueue.length)resolveHunter();else{renderNightResult()}})}
+function renderDay(){$("phaseTitle").textContent=t("discussion");$("phaseText").textContent=t("voteHint");setAction(`<div class="note">${t("voteHint")}</div>`);setBtns(`<button id="vote">${t("vote")}</button>`);$("vote").onclick=renderVoting}
+function renderVoting(){let a=alive();setAction(`<div>${a.map(p=>`<div class="row" style="margin:8px 0;align-items:center"><div class="field"><b>${esc(p.name)}</b></div><div class="field"><select data-vote="${p.id}"><option value="">${t("selectVote")}</option>${a.filter(x=>x.id!==p.id).map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join("")}</select></div></div>`).join("")}</div>`);setBtns(`<button id="count">${t("count")}</button>`);$("count").onclick=()=>{let tally={};document.querySelectorAll("[data-vote]").forEach(s=>{if(s.value!==""){let voter=G.players[+s.dataset.vote];tally[s.value]=(tally[s.value]||0)+(voter.role==="Mayor"?2:1)}});let max=Math.max(0,...Object.values(tally)),w=Object.keys(tally).filter(k=>tally[k]===max);if(!max||w.length!==1){setAction(`<div class="note">${t("tied")}</div>`);setBtns(`<button id="nextNight">${t("newNight")}</button>`);$("nextNight").onclick=finishDay;return}let id=+w[0];kill(id);log(`${G.players[id].name} ${t("eliminated")}`);G.lastDead=[id];G.hunterQueue=G.players[id].role==="Hunter"?[id]:[];setAction(`<div class="note">${esc(G.players[id].name)} ${t("eliminated")}. ${t("role")}: ${roleNames[G.players[id].role][lang]}</div>`);setBtns(`${G.hunterQueue.length?`<button id="hunterVote">${roleNames.Hunter[lang]}</button>`:""}<button id="nextNight">${t("newNight")}</button>`);if(G.hunterQueue.length)$("hunterVote").onclick=resolveHunter;$("nextNight").onclick=()=>{if(G.hunterQueue.length)return;finishDay()}}}
+function finishDay(){let w=winner();if(w){showWinner(w);return}G.night++;startNight()}
+function winner(){let m=rolePlayers("Mafia").length,o=alive().length-m;if(m===0)return "village";if(m>=o)return "mafia";return null}
+function showWinner(w){G.phase="over";$("phasePill").textContent=t("gameOver");$("phaseTitle").textContent=(w==="mafia"?t("mafiaWin"):t("villageWin"))+" "+t("winner");$("phaseText").textContent="";setAction(`<div class="role-card"><div class="role-icon">🏆</div><div class="role-name">${w==="mafia"?t("mafiaWin"):t("villageWin")}</div></div><div class="grid">${G.players.map(p=>`<div class="player"><span>${esc(p.name)}</span><b>${roleNames[p.role][lang]}</b></div>`).join("")}</div>`);setBtns(`<button id="newGame">${t("restart")}</button>`);$("newGame").onclick=()=>location.reload();updateBoard()}
+
+function openPinDialog(){
+ $("pinTitle").textContent=lang==="ar"?"دخول المنظّم":"Host access";
+ $("pinMessage").textContent=lang==="ar"?"أدخل الرقم السري المكوّن من 4 أرقام":"Enter your 4-digit host PIN.";
+ $("pinSubmit").textContent=lang==="ar"?"فتح وضع المنظّم":"Unlock";
+ $("pinCancel").textContent=lang==="ar"?"إلغاء":"Cancel";
+ $("pinInput").value="";
+ $("pinModal").classList.remove("hidden");
+ $("pinInput").focus();
+}
+function closePinDialog(){$("pinModal").classList.add("hidden");$("pinInput").value=""}
+function unlockHost(){
+ let entered=$("pinInput").value.trim();
+ if(entered===G.hostPin){
+  G.hostUnlocked=true;closePinDialog();$("hostPanel").classList.remove("hidden");
+  $("hostModeBtn").textContent="🔓 "+(lang==="ar"?"وضع المنظّم مفتوح":"Host mode unlocked");
+  $("hostUnlockedLabel").textContent=lang==="ar"?"وضع المنظّم مفتوح":"Host mode unlocked";
+  $("hostHint").textContent=lang==="ar"?"اضغط السهم تحت اسم اللاعب لكشف شخصيته. اقفل الوضع قبل ما تسلّم الموبايل.":"Tap the arrow under a player to reveal their role. Lock host mode before passing the phone.";
+  updateBoard();
+ }else{
+  $("pinMessage").textContent=lang==="ar"?"الرقم السري غير صحيح، حاول تاني.":"Incorrect PIN. Please try again.";
+  $("pinInput").value="";$("pinInput").focus();
+ }
+}
+$("hostModeBtn").onclick=()=>{
+ if(!G)return;
+ if(G.hostUnlocked){G.hostUnlocked=false;$("hostPanel").classList.add("hidden");$("hostModeBtn").textContent="🔒 "+(lang==="ar"?"وضع المنظّم":"Host mode");updateBoard();return}
+ openPinDialog();
+};
+$("startupPinClose").onclick=()=>{$("startupPinModal").classList.add("hidden");$("startupPinModal").style.display="none"};
+$("pinSubmit").onclick=unlockHost;
+$("pinCancel").onclick=closePinDialog;
+$("pinInput").addEventListener("keydown",e=>{if(e.key==="Enter")unlockHost();if(e.key==="Escape")closePinDialog()});
+$("lockHost").onclick=()=>{G.hostUnlocked=false;$("hostPanel").classList.add("hidden");$("hostModeBtn").textContent="🔒 "+(lang==="ar"?"وضع المنظّم":"Host mode");updateBoard()};
+$("restart").onclick=()=>{if(confirm(t("restart")+"?"))location.reload()};
+renderRoleOptions();renderNameFields();updateSummary();
+</script></body></html>
